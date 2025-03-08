@@ -71,10 +71,6 @@ def oauth_callback(request):
             oauth.save()
 
             logger.error(access_token_response.access_token)
-            logger.error(RegisterEventSubscriptionRequest(
-                event_type=RegisterEventSubscriptionRequest.EventType.NEW_MESSAGE_ON_POST,
-                event_resource_id=chat.post.token,
-            ))
 
             kenar_client.events.register_event_subscription(
                 access_token=access_token_response.access_token,
