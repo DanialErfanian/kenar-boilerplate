@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view
 from addon.models import Post
 from boilerplate import settings
 from boilerplate.clients import get_divar_kenar_client
-from chat.handler import ChatNotificationHandler, Notification, StartChatSessionRequest
+from chat.handler import *
 from chat.models import Chat
 from oauth.models import OAuth
 from oauth.schemas import OAuthSession, OAuthSessionType
@@ -135,43 +135,13 @@ def chat_app(request):
 
 @api_view(["POST"])
 def receive_notify(request):
-    signed_authorization = request.headers.get("Authorization")
-    if not signed_authorization:
-        return JsonResponse(
-            {
-                "status": "403",
-            }
-        )
+    auth_header = request.headers.get("Authorization")
 
-    try:
-        chat_id = signer.unsign(signed_authorization)
-    except signing.BadSignature:
-        return JsonResponse(
-            {
-                "status": "403",
-            }
-        )
-
-    try:
-        chat = Chat.objects.get(id=chat_id)
-    except Chat.DoesNotExist:
-        return JsonResponse(
-            {
-                "status": "404",
-            }
-        )
-
-    try:
-        notification = Notification(**json.loads(request.body))
-        handler = ChatNotificationHandler(chat=chat)
-        handler.handle(notification)
-    except Exception as e:
-        logger.error(e)
-        return JsonResponse(
-            {
-                "status": "500",
-            }
-        )
+    if not auth_header or auth_header != settings.DIVAR_IDENTIFICATION_KEY:
+        return HttpResponseForbidden("Unauthorized access")
+    event = Event(**json.loads(request.body))
+    handler = EventHandler()
+    handler.handle_event(event)
 
     return JsonResponse(
         {
